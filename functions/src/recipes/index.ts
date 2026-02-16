@@ -209,7 +209,7 @@ export const generateRecipe = onCall(
     try {
       const response = await anthropic.messages.create({
         model: CLAUDE_MODEL,
-        max_tokens: 2000,
+        max_tokens: 4000,
         messages: [{ role: "user", content: `Create a recipe for: ${prompt}` }],
         system: GENERATE_RECIPE_SYSTEM_PROMPT,
       });
@@ -445,10 +445,10 @@ export const modifyRecipe = onCall(
 
     return {
       success: true,
-      modification: {
+      modificationJson: JSON.stringify({
         ...pendingChanges,
         generatedAt: now.toDate().toISOString(),
-      },
+      }),
     };
   }
 );
