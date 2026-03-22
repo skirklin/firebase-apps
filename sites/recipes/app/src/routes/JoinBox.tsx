@@ -1,5 +1,6 @@
 import { useState, useEffect, useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useBasePath } from "../RecipesRoutes";
 import { Button, Spin, message } from "antd";
 import styled from "styled-components";
 import { doc, getDoc, updateDoc, arrayUnion } from "firebase/firestore";
@@ -59,6 +60,7 @@ const ButtonGroup = styled.div`
 export default function JoinBox() {
   const { boxId } = useParams<{ boxId: string }>();
   const navigate = useNavigate();
+  const basePath = useBasePath();
   const { state } = useContext(Context);
   const { user } = useAuth();
   const appUser = getAppUserFromState(state, user?.uid);
@@ -107,7 +109,7 @@ export default function JoinBox() {
       });
 
       message.success("Box added to your collection!");
-      navigate(`/boxes/${boxId}`);
+      navigate(`${basePath}/boxes/${boxId}`);
     } catch (error) {
       console.error("Failed to join box:", error);
       message.error("Failed to join box. You may not have permission.");
