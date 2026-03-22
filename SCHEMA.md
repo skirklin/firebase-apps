@@ -46,7 +46,8 @@ Recipe box containers.
 | Field | Type | Description |
 |-------|------|-------------|
 | `name` | string | Box name |
-| `owners` | string[] | User IDs with access |
+| `owners` | string[] | User IDs with edit access |
+| `subscribers` | string[] | User IDs who have added this box to their collection |
 | `visibility` | string | `"private"`, `"public"`, or `"unlisted"` |
 | `created` | Timestamp | Creation time |
 | `updated` | Timestamp | Last update time |

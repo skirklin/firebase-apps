@@ -22,12 +22,28 @@ service cloud.firestore {
         || (request.auth != null && request.auth.uid in resource.data.owners)
         || request.auth != null;
       allow create: if request.auth != null;
-      // Allow update if: already an owner, OR adding yourself to owners (for joining)
+      // Allow update if:
+      //   1. Already an owner (full access)
+      //   2. Self-join: adding yourself to owners (and optionally subscribers), no other changes
+      //   3. Self-subscribe: adding yourself to subscribers only, no other changes
       allow update: if request.auth != null
         && (request.auth.uid in resource.data.owners
+            || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['owners', 'subscribers'])
+                && request.resource.data.owners.hasAll(resource.data.owners)
+                && request.auth.uid in request.resource.data.owners)
             || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['owners'])
                 && request.resource.data.owners.hasAll(resource.data.owners)
-                && request.auth.uid in request.resource.data.owners));
+                && request.auth.uid in request.resource.data.owners)
+            || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['subscribers'])
+                && (
+                  // Subscribe: new array is superset of old + includes self
+                  (request.resource.data.subscribers.hasAll(resource.data.get('subscribers', []))
+                    && request.auth.uid in request.resource.data.subscribers)
+                  // Unsubscribe: old array minus self equals new array
+                  || (resource.data.get('subscribers', []).hasAll(request.resource.data.subscribers)
+                    && !(request.auth.uid in request.resource.data.subscribers)
+                    && request.auth.uid in resource.data.get('subscribers', []))
+                )));
       allow delete: if request.auth != null
         && request.auth.uid in resource.data.owners;
 

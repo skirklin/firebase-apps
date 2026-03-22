@@ -34,4 +34,5 @@ export {
   migrateCookingLogs,
   migrateLifeEntries,
   migrateUpkeepCompletions,
+  backfillBoxSubscribers,
 } from "./migrations";

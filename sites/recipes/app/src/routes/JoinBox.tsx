@@ -94,9 +94,10 @@ export default function JoinBox() {
       const boxRef = doc(db, "boxes", boxId);
       const userRef = doc(db, "users", user.uid);
 
-      // Add user as owner of the box
+      // Add user as owner and subscriber of the box
       await updateDoc(boxRef, {
-        owners: arrayUnion(user.uid)
+        owners: arrayUnion(user.uid),
+        subscribers: arrayUnion(user.uid)
       });
 
       // Add box to user's boxes

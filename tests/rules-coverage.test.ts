@@ -897,3 +897,96 @@ describe('Upkeep TaskList Create/Delete Restrictions', () => {
     await assertFails(deleteDoc(doc(userBDb, 'taskLists', LIST_ID)));
   });
 });
+
+// ==========================================
+// Box Subscriber Flow
+// ==========================================
+
+describe('Box Subscriber Flow', () => {
+  const BOX_ID = 'sub-box';
+
+  async function setupBox(owners = [USER_A], subscribers: string[] = []) {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, 'boxes', BOX_ID), {
+        data: { name: 'Public Box' },
+        owners,
+        subscribers,
+        visibility: 'public',
+      });
+    });
+  }
+
+  it('authenticated user can add themselves as subscriber', async () => {
+    await setupBox();
+    const userBDb = testEnv.authenticatedContext(USER_B).firestore();
+    const boxRef = doc(userBDb, 'boxes', BOX_ID);
+
+    await assertSucceeds(
+      updateDoc(boxRef, { subscribers: [USER_B] })
+    );
+  });
+
+  it('subscriber cannot remove other subscribers', async () => {
+    await setupBox([USER_A], [USER_A]);
+    const userBDb = testEnv.authenticatedContext(USER_B).firestore();
+    const boxRef = doc(userBDb, 'boxes', BOX_ID);
+
+    // Try to replace subscribers array (removing User A)
+    await assertFails(
+      updateDoc(boxRef, { subscribers: [USER_B] })
+    );
+  });
+
+  it('subscriber can add themselves alongside existing subscribers', async () => {
+    await setupBox([USER_A], [USER_A]);
+    const userBDb = testEnv.authenticatedContext(USER_B).firestore();
+    const boxRef = doc(userBDb, 'boxes', BOX_ID);
+
+    await assertSucceeds(
+      updateDoc(boxRef, { subscribers: [USER_A, USER_B] })
+    );
+  });
+
+  it('subscriber cannot modify other fields', async () => {
+    await setupBox();
+    const userBDb = testEnv.authenticatedContext(USER_B).firestore();
+    const boxRef = doc(userBDb, 'boxes', BOX_ID);
+
+    await assertFails(
+      updateDoc(boxRef, { subscribers: [USER_B], visibility: 'private' })
+    );
+  });
+
+  it('join flow can update both owners and subscribers', async () => {
+    await setupBox();
+    const userBDb = testEnv.authenticatedContext(USER_B).firestore();
+    const boxRef = doc(userBDb, 'boxes', BOX_ID);
+
+    await assertSucceeds(
+      updateDoc(boxRef, { owners: [USER_A, USER_B], subscribers: [USER_B] })
+    );
+  });
+
+  it('subscriber cannot add other users as subscribers', async () => {
+    await setupBox();
+    const userBDb = testEnv.authenticatedContext(USER_B).firestore();
+    const boxRef = doc(userBDb, 'boxes', BOX_ID);
+
+    // User B tries to add User C as subscriber
+    await assertFails(
+      updateDoc(boxRef, { subscribers: [USER_C] })
+    );
+  });
+
+  it('owner can modify subscribers freely', async () => {
+    await setupBox([USER_A], [USER_B]);
+    const userADb = testEnv.authenticatedContext(USER_A).firestore();
+    const boxRef = doc(userADb, 'boxes', BOX_ID);
+
+    // Owner can remove subscribers
+    await assertSucceeds(
+      updateDoc(boxRef, { subscribers: [] })
+    );
+  });
+});

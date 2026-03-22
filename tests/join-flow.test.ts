@@ -800,3 +800,47 @@ describe('Complete Recipe Box Share Flow', () => {
     );
   });
 });
+
+describe('Box Subscribe Without Joining', () => {
+  it('User B can subscribe to a public box without becoming an owner', async () => {
+    const BOX_ID = 'subscribe-only-box';
+
+    // Step 1: User A creates a public box
+    const userADb = testEnv.authenticatedContext(USER_A).firestore();
+    await assertSucceeds(
+      setDoc(doc(userADb, 'boxes', BOX_ID), {
+        data: { name: 'Public Recipes' },
+        owners: [USER_A],
+        subscribers: [USER_A],
+        visibility: 'public',
+      })
+    );
+
+    // Step 2: User B subscribes (adds themselves to subscribers only)
+    const userBDb = testEnv.authenticatedContext(USER_B).firestore();
+    await assertSucceeds(
+      updateDoc(doc(userBDb, 'boxes', BOX_ID), {
+        subscribers: arrayUnion(USER_B),
+      })
+    );
+
+    // Step 3: User B can read the box
+    await assertSucceeds(getDoc(doc(userBDb, 'boxes', BOX_ID)));
+
+    // Step 4: User B cannot write recipes (not an owner)
+    await assertFails(
+      addDoc(collection(userBDb, 'boxes', BOX_ID, 'recipes'), {
+        data: { name: 'Sneaky' },
+        owners: [USER_B],
+        visibility: 'private',
+      })
+    );
+
+    // Step 5: User B can unsubscribe
+    await assertSucceeds(
+      updateDoc(doc(userBDb, 'boxes', BOX_ID), {
+        subscribers: [USER_A],
+      })
+    );
+  });
+});
