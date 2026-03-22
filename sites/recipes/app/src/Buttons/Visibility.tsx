@@ -15,12 +15,13 @@ interface VisibilityProps {
     boxId?: string
     recipeId?: string
     owners?: string[]
+    subscribers?: string[]
     handleChange: (e: { key: string }) => void
     handleAddOwner: (newOwnerEmail: string) => void
 }
 
 export default function VisibilityControl(props: VisibilityProps) {
-    const { element, value, handleChange, disabled, handleAddOwner, boxId, recipeId, owners } = props;
+    const { element, value, handleChange, disabled, handleAddOwner, boxId, recipeId, owners, subscribers } = props;
     const { state } = useContext(Context);
     const [isAddOwnerVisible, setIsAddOwnerVisible] = useState(false);
     const [isOwnersVisible, setIsOwnersVisible] = useState(false);
@@ -99,10 +100,12 @@ export default function VisibilityControl(props: VisibilityProps) {
             onClick: () => setIsAddOwnerVisible(true),
         });
         if (owners && owners.length > 0) {
+            const subscriberOnlyCount = (subscribers || []).filter(id => !owners.includes(id)).length;
+            const totalPeople = owners.length + subscriberOnlyCount;
             menuItems.push({
                 key: 'viewOwners',
                 icon: <TeamOutlined />,
-                label: `View owners (${owners.length})`,
+                label: `View people (${totalPeople})`,
                 onClick: () => setIsOwnersVisible(true),
             });
         }
@@ -133,6 +136,7 @@ export default function VisibilityControl(props: VisibilityProps) {
                 isVisible={isOwnersVisible}
                 setIsVisible={setIsOwnersVisible}
                 ownerIds={owners || []}
+                subscriberIds={subscribers || []}
             />
         </>
     )
