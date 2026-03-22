@@ -21,3 +21,7 @@ export const modifyRecipe = httpsCallable<
   { boxId: string, recipeId: string, feedback: string },
   { success: boolean, modificationJson: string }
 >(functions, 'modifyRecipe');
+export const getOwnerInfo = httpsCallable<
+  { ownerIds: string[] },
+  { owners: { uid: string, name: string | null, email: string | null }[] }
+>(functions, 'getOwnerInfo');

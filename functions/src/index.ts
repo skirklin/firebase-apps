@@ -19,6 +19,7 @@ export {
   getRecipes,
   addRecipeOwner,
   addBoxOwner,
+  getOwnerInfo,
   generateRecipe,
   enrichRecipeManual,
   modifyRecipe,

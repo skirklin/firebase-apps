@@ -500,3 +500,303 @@ describe('Full Join Flow Simulation', () => {
     );
   });
 });
+
+describe('Recipe Box Join Flow', () => {
+  const BOX_ID = 'recipe-box-1';
+
+  it('User A can create a box with themselves as owner', async () => {
+    const userADb = testEnv.authenticatedContext(USER_A).firestore();
+    const boxRef = doc(userADb, 'boxes', BOX_ID);
+
+    await assertSucceeds(
+      setDoc(boxRef, {
+        data: { name: 'Family Recipes' },
+        owners: [USER_A],
+        visibility: 'private',
+        creator: USER_A,
+        created: new Date(),
+        updated: new Date(),
+        lastUpdatedBy: USER_A,
+      })
+    );
+  });
+
+  it('User B can read box metadata without being an owner', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, 'boxes', BOX_ID), {
+        data: { name: 'Family Recipes' },
+        owners: [USER_A],
+        visibility: 'private',
+      });
+    });
+
+    const userBDb = testEnv.authenticatedContext(USER_B).firestore();
+    const boxRef = doc(userBDb, 'boxes', BOX_ID);
+
+    await assertSucceeds(getDoc(boxRef));
+  });
+
+  it('User B can add themselves to owners (join flow)', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, 'boxes', BOX_ID), {
+        data: { name: 'Family Recipes' },
+        owners: [USER_A],
+        visibility: 'private',
+      });
+    });
+
+    const userBDb = testEnv.authenticatedContext(USER_B).firestore();
+    const boxRef = doc(userBDb, 'boxes', BOX_ID);
+
+    await assertSucceeds(
+      updateDoc(boxRef, { owners: arrayUnion(USER_B) })
+    );
+  });
+
+  it('User B cannot remove existing owners when joining', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, 'boxes', BOX_ID), {
+        data: { name: 'Family Recipes' },
+        owners: [USER_A],
+        visibility: 'private',
+      });
+    });
+
+    const userBDb = testEnv.authenticatedContext(USER_B).firestore();
+    const boxRef = doc(userBDb, 'boxes', BOX_ID);
+
+    await assertFails(
+      setDoc(boxRef, { data: { name: 'Family Recipes' }, owners: [USER_B], visibility: 'private' })
+    );
+  });
+
+  it('User B cannot modify other fields when joining', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, 'boxes', BOX_ID), {
+        data: { name: 'Family Recipes' },
+        owners: [USER_A],
+        visibility: 'private',
+      });
+    });
+
+    const userBDb = testEnv.authenticatedContext(USER_B).firestore();
+    const boxRef = doc(userBDb, 'boxes', BOX_ID);
+
+    await assertFails(
+      updateDoc(boxRef, {
+        owners: arrayUnion(USER_B),
+        visibility: 'public',
+      })
+    );
+  });
+
+  it('After joining, User B can read and write recipes', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, 'boxes', BOX_ID), {
+        data: { name: 'Family Recipes' },
+        owners: [USER_A, USER_B],
+        visibility: 'private',
+      });
+    });
+
+    const userBDb = testEnv.authenticatedContext(USER_B).firestore();
+    const recipesRef = collection(userBDb, 'boxes', BOX_ID, 'recipes');
+
+    const recipeRef = await assertSucceeds(
+      addDoc(recipesRef, {
+        data: { name: 'Pancakes', '@type': 'Recipe' },
+        owners: [USER_B],
+        visibility: 'private',
+        creator: USER_B,
+      })
+    );
+
+    await assertSucceeds(getDoc(recipeRef));
+    await assertSucceeds(deleteDoc(recipeRef));
+  });
+
+  it('After joining, User B can read and write cooking events', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, 'boxes', BOX_ID), {
+        data: { name: 'Family Recipes' },
+        owners: [USER_A, USER_B],
+        visibility: 'private',
+      });
+    });
+
+    const userBDb = testEnv.authenticatedContext(USER_B).firestore();
+    const eventsRef = collection(userBDb, 'boxes', BOX_ID, 'events');
+
+    const eventRef = await assertSucceeds(
+      addDoc(eventsRef, {
+        subjectId: 'recipe1',
+        timestamp: new Date(),
+        createdAt: new Date(),
+        createdBy: USER_B,
+        data: {},
+      })
+    );
+
+    await assertSucceeds(getDoc(eventRef));
+  });
+
+  it('User C cannot write recipes without being an owner', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, 'boxes', BOX_ID), {
+        data: { name: 'Family Recipes' },
+        owners: [USER_A],
+        visibility: 'private',
+      });
+    });
+
+    const userCDb = testEnv.authenticatedContext(USER_C).firestore();
+    const recipesRef = collection(userCDb, 'boxes', BOX_ID, 'recipes');
+
+    await assertFails(
+      addDoc(recipesRef, {
+        data: { name: 'Hacked Recipe' },
+        owners: [USER_C],
+        visibility: 'private',
+      })
+    );
+  });
+
+  it('User C cannot write events without being an owner', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, 'boxes', BOX_ID), {
+        data: { name: 'Family Recipes' },
+        owners: [USER_A],
+        visibility: 'private',
+      });
+    });
+
+    const userCDb = testEnv.authenticatedContext(USER_C).firestore();
+    const eventsRef = collection(userCDb, 'boxes', BOX_ID, 'events');
+
+    await assertFails(
+      addDoc(eventsRef, {
+        subjectId: 'recipe1',
+        timestamp: new Date(),
+        createdBy: USER_C,
+        data: {},
+      })
+    );
+  });
+
+  it('Unauthenticated user cannot read private box', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, 'boxes', BOX_ID), {
+        data: { name: 'Family Recipes' },
+        owners: [USER_A],
+        visibility: 'private',
+      });
+    });
+
+    const unauthDb = testEnv.unauthenticatedContext().firestore();
+    const boxRef = doc(unauthDb, 'boxes', BOX_ID);
+
+    await assertFails(getDoc(boxRef));
+  });
+
+  it('Unauthenticated user can read public box', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, 'boxes', BOX_ID), {
+        data: { name: 'Public Recipes' },
+        owners: [USER_A],
+        visibility: 'public',
+      });
+    });
+
+    const unauthDb = testEnv.unauthenticatedContext().firestore();
+    const boxRef = doc(unauthDb, 'boxes', BOX_ID);
+
+    await assertSucceeds(getDoc(boxRef));
+  });
+});
+
+describe('Complete Recipe Box Share Flow', () => {
+  it('create -> share link -> join -> add recipes -> collaborate', async () => {
+    const BOX_ID = 'shared-recipe-box';
+
+    // Step 1: User A creates the box
+    const userADb = testEnv.authenticatedContext(USER_A).firestore();
+    const boxRefA = doc(userADb, 'boxes', BOX_ID);
+
+    await assertSucceeds(
+      setDoc(boxRefA, {
+        data: { name: 'Shared Recipes' },
+        owners: [USER_A],
+        visibility: 'private',
+        creator: USER_A,
+        created: new Date(),
+        updated: new Date(),
+        lastUpdatedBy: USER_A,
+      })
+    );
+
+    // Step 2: User A adds a recipe
+    const recipesRefA = collection(userADb, 'boxes', BOX_ID, 'recipes');
+    await assertSucceeds(
+      addDoc(recipesRefA, {
+        data: { name: 'Chocolate Cake', '@type': 'Recipe' },
+        owners: [USER_A],
+        visibility: 'private',
+        creator: USER_A,
+      })
+    );
+
+    // Step 3: User B visits join link - reads box metadata
+    const userBDb = testEnv.authenticatedContext(USER_B).firestore();
+    const boxRefB = doc(userBDb, 'boxes', BOX_ID);
+
+    await assertSucceeds(getDoc(boxRefB));
+
+    // Step 4: User B joins by adding themselves to owners
+    await assertSucceeds(
+      updateDoc(boxRefB, { owners: arrayUnion(USER_B) })
+    );
+
+    // Step 5: User B can now add recipes
+    const recipesRefB = collection(userBDb, 'boxes', BOX_ID, 'recipes');
+    await assertSucceeds(
+      addDoc(recipesRefB, {
+        data: { name: 'Banana Bread', '@type': 'Recipe' },
+        owners: [USER_B],
+        visibility: 'private',
+        creator: USER_B,
+      })
+    );
+
+    // Step 6: User B can log cooking events
+    const eventsRefB = collection(userBDb, 'boxes', BOX_ID, 'events');
+    await assertSucceeds(
+      addDoc(eventsRefB, {
+        subjectId: 'recipe1',
+        timestamp: new Date(),
+        createdAt: new Date(),
+        createdBy: USER_B,
+        data: { notes: 'Turned out great!' },
+      })
+    );
+
+    // Step 7: User A can still do everything
+    await assertSucceeds(
+      addDoc(recipesRefA, {
+        data: { name: 'Apple Pie', '@type': 'Recipe' },
+        owners: [USER_A],
+        visibility: 'private',
+        creator: USER_A,
+      })
+    );
+  });
+});

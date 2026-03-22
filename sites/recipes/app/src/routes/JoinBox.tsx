@@ -107,7 +107,7 @@ export default function JoinBox() {
       });
 
       message.success("Box added to your collection!");
-      navigate(`boxes/${boxId}`);
+      navigate(`/boxes/${boxId}`);
     } catch (error) {
       console.error("Failed to join box:", error);
       message.error("Failed to join box. You may not have permission.");
