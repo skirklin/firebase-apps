@@ -1,7 +1,7 @@
 /**
  * Shared routes component used by both standalone and embedded modes
  */
-import { Routes, Route, useResolvedPath } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import { createContext, useContext } from 'react';
 
 import Main from './Main';
@@ -26,15 +26,16 @@ export function useBasePath() {
 interface RecipesRoutesProps {
   /** When true, hides sign-out and other account actions (handled by parent shell) */
   embedded?: boolean;
+  /** Override the base path for navigation (defaults to '/recipes' if embedded, '' if standalone) */
+  basePath?: string;
 }
 
-export function RecipesRoutes({ embedded = false }: RecipesRoutesProps) {
-  // useResolvedPath("") gives the path where this <Routes> is mounted
-  const resolved = useResolvedPath("");
-  const basePath = resolved.pathname.replace(/\/$/, '');
+export function RecipesRoutes({ embedded = false, basePath }: RecipesRoutesProps) {
+  // In embedded mode the parent mounts us at /recipes, in standalone mode at /
+  const resolvedBase = basePath ?? (embedded ? '/recipes' : '');
 
   return (
-    <BasePathContext.Provider value={basePath}>
+    <BasePathContext.Provider value={resolvedBase}>
       <Routes>
         <Route path="/join/:boxId" element={<JoinBox />} />
         <Route path="/" element={<Main embedded={embedded} />}>

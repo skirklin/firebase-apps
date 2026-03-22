@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useBasePath } from "../RecipesRoutes";
 import { Button, Spin, message } from "antd";
@@ -6,9 +6,7 @@ import styled from "styled-components";
 import { doc, getDoc, updateDoc, arrayUnion } from "firebase/firestore";
 import { useAuth } from "@kirkl/shared";
 import { db } from "../backend";
-import { Context } from "../context";
 import { boxConverter } from "../storage";
-import { getAppUserFromState } from "../state";
 
 const Container = styled.div`
   min-height: 100vh;
@@ -61,9 +59,7 @@ export default function JoinBox() {
   const { boxId } = useParams<{ boxId: string }>();
   const navigate = useNavigate();
   const basePath = useBasePath();
-  const { state } = useContext(Context);
   const { user } = useAuth();
-  const appUser = getAppUserFromState(state, user?.uid);
   const [boxName, setBoxName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -91,7 +87,7 @@ export default function JoinBox() {
   }, [boxId]);
 
   const handleJoin = async () => {
-    if (!boxId || !user || !appUser) return;
+    if (!boxId || !user) return;
 
     setSubmitting(true);
     try {
