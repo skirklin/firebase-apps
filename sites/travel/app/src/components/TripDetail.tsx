@@ -32,7 +32,11 @@ import styled from "styled-components";
 import { WideContainer, getBackend } from "@kirkl/shared";
 import { useTravelContext } from "../travel-context";
 import { getActivitiesForTrip, getItinerariesForTrip } from "../subscription";
-import { deleteTrip, flagTrip } from "../firestore";
+import {
+  deleteTrip, flagTrip,
+  addItinerary, updateItinerary as updateItineraryDoc, deleteItinerary as deleteItineraryDoc,
+  deleteActivity,
+} from "../firestore";
 import {
   STATUS_COLORS,
   formatDateRange,
@@ -347,6 +351,7 @@ export function TripDetail() {
               focusDay={focusDay}
               onDayClick={(day) => setFocusDay(focusDay === day ? null : day)}
               onDayNav={(day) => setFocusDay(day)}
+              navigate={navigate}
             />
           )}
 
@@ -400,6 +405,7 @@ function ItinerarySection({
   focusDay,
   onDayClick,
   onDayNav,
+  navigate,
 }: {
   itineraries: Itinerary[];
   activities: Activity[];
@@ -407,6 +413,7 @@ function ItinerarySection({
   focusDay: number | null;
   onDayClick: (dayIndex: number) => void;
   onDayNav: (dayIndex: number) => void;
+  navigate: (path: string) => void;
 }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get("view") || "timeline";
@@ -435,7 +442,9 @@ function ItinerarySection({
       key: "timeline",
       label: <span><UnorderedListOutlined /> Timeline</span>,
       children: currentItin ? (
-        <ItineraryTimeline itinerary={currentItin} activityMap={activityMap} focusDay={focusDay} onDayClick={onDayClick} onDayNav={onDayNav} />
+        <ItineraryTimeline itinerary={currentItin} activityMap={activityMap} focusDay={focusDay} onDayClick={onDayClick} onDayNav={onDayNav}
+          onEditActivity={(id) => navigate(`activities/${id}/edit`)}
+          onDeleteActivity={(id) => deleteActivity(id)} />
       ) : null,
     },
     {
@@ -465,24 +474,69 @@ function ItinerarySection({
       : []),
   ];
 
+  const handleCreateItinerary = async () => {
+    const tripId = currentItin?.tripId;
+    if (!tripId) return;
+    const name = window.prompt("Itinerary name:", "Option " + String.fromCharCode(65 + itineraries.length));
+    if (!name) return;
+    await addItinerary({
+      tripId, name, isActive: false, days: [],
+      created: new Date(), updated: new Date(),
+    });
+  };
+
+  const handleRenameItinerary = async () => {
+    if (!currentItin) return;
+    const name = window.prompt("Rename itinerary:", currentItin.name);
+    if (!name || name === currentItin.name) return;
+    await updateItineraryDoc(currentItin.id, { name });
+  };
+
+  const handleDeleteItinerary = async () => {
+    if (!currentItin || itineraries.length <= 1) return;
+    if (!window.confirm(`Delete itinerary "${currentItin.name}"?`)) return;
+    await deleteItineraryDoc(currentItin.id);
+  };
+
+  const handleDuplicateItinerary = async () => {
+    if (!currentItin) return;
+    const name = window.prompt("Name for copy:", `${currentItin.name} (copy)`);
+    if (!name) return;
+    await addItinerary({
+      tripId: currentItin.tripId, name, isActive: false,
+      days: currentItin.days,
+      created: new Date(), updated: new Date(),
+    });
+  };
+
   return (
     <Section>
       <SectionHeader>
-        <SectionTitle>
-          Itinerary
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <SectionTitle>Itinerary</SectionTitle>
           {itineraries.length > 1 && (
             <Select
               size="small"
               value={selectedItin}
               onChange={setSelectedItin}
-              style={{ marginLeft: 12, minWidth: 120 }}
+              style={{ minWidth: 120 }}
               options={itineraries.map((i) => ({
                 label: `${i.name}${i.isActive ? " (active)" : ""}`,
                 value: i.id,
               }))}
             />
           )}
-        </SectionTitle>
+        </div>
+        <Space size={4}>
+          <Button size="small" type="text" onClick={handleCreateItinerary}>New</Button>
+          <Button size="small" type="text" onClick={handleRenameItinerary}>Rename</Button>
+          <Button size="small" type="text" onClick={handleDuplicateItinerary}>Duplicate</Button>
+          {itineraries.length > 1 && (
+            <Popconfirm title={`Delete "${currentItin?.name}"?`} onConfirm={handleDeleteItinerary}>
+              <Button size="small" type="text" danger>Delete</Button>
+            </Popconfirm>
+          )}
+        </Space>
       </SectionHeader>
       <Tabs items={tabItems} size="small" activeKey={activeTab} onChange={setTab} />
     </Section>
@@ -653,7 +707,8 @@ function ActivityTooltip({ activity, apiKey }: { activity: Activity; apiKey: str
         {activity.durationEstimate && <span><ClockCircleOutlined /> {activity.durationEstimate}</span>}
         {activity.costNotes && <span><DollarOutlined /> {activity.costNotes}</span>}
       </HoverMeta>
-      {activity.description && <div style={{ color: "#595959", marginTop: 3 }}>{activity.description}</div>}
+      {activity.description && <div style={{ color: "#595959", marginTop: 3, fontStyle: "italic" }}>{activity.description}</div>}
+      {activity.details && <div style={{ color: "#595959", marginTop: 4, fontSize: 11, lineHeight: 1.4, whiteSpace: "pre-wrap" }}>{activity.details}</div>}
     </HoverTooltip>
   );
 }
@@ -664,12 +719,16 @@ function ItineraryTimeline({
   focusDay,
   onDayClick,
   onDayNav,
+  onEditActivity,
+  onDeleteActivity,
 }: {
   itinerary: Itinerary;
   activityMap: Map<string, Activity>;
   focusDay: number | null;
   onDayClick: (dayIndex: number) => void;
   onDayNav: (dayIndex: number) => void;
+  onEditActivity: (activityId: string) => void;
+  onDeleteActivity: (activityId: string) => void;
 }) {
   const { app: firebaseApp } = getBackend();
   const apiKey = firebaseApp.options.apiKey || "";
@@ -757,9 +816,17 @@ function ItineraryTimeline({
                     {activity?.durationEstimate && <span><ClockCircleOutlined /> {activity.durationEstimate}</span>}
                     {activity?.costNotes && <span><DollarOutlined /> {activity.costNotes}</span>}
                   </ExpandedSlotMeta>
-                  {activity?.description && <ExpandedSlotDesc>{activity.description}</ExpandedSlotDesc>}
-                  {slot.notes && <ExpandedSlotDesc style={{ fontStyle: "italic" }}>{slot.notes}</ExpandedSlotDesc>}
+                  {activity?.description && <ExpandedSlotDesc style={{ fontStyle: "italic" }}>{activity.description}</ExpandedSlotDesc>}
+                  {activity?.details && <ExpandedSlotDesc style={{ whiteSpace: "pre-wrap" }}>{activity.details}</ExpandedSlotDesc>}
+                  {slot.notes && <ExpandedSlotDesc style={{ fontStyle: "italic", color: "#8c8c8c" }}>{slot.notes}</ExpandedSlotDesc>}
                 </ExpandedSlotBody>
+                <Space size={2} style={{ flexShrink: 0, alignSelf: "flex-start", paddingTop: 2 }}>
+                  <Button type="text" size="small" icon={<EditOutlined />}
+                    onClick={() => activity && onEditActivity(activity.id)} />
+                  <Popconfirm title="Remove activity?" onConfirm={() => activity && onDeleteActivity(activity.id)}>
+                    <Button type="text" size="small" danger icon={<DeleteOutlined />} />
+                  </Popconfirm>
+                </Space>
               </ExpandedSlot>
             );
           })}

@@ -241,6 +241,7 @@ export function activityUpdates(fields: {
   costNotes?: string;
   durationEstimate?: string;
   confirmationCode?: string;
+  details?: string;
   tripId?: string;
 }): Partial<ActivityStore> {
   const updates: Partial<ActivityStore> = {};
@@ -254,6 +255,7 @@ export function activityUpdates(fields: {
   if (fields.costNotes !== undefined) updates.costNotes = fields.costNotes;
   if (fields.durationEstimate !== undefined) updates.durationEstimate = fields.durationEstimate;
   if (fields.confirmationCode !== undefined) updates.confirmationCode = fields.confirmationCode;
+  if (fields.details !== undefined) updates.details = fields.details;
   if (fields.tripId !== undefined) updates.tripId = fields.tripId;
   return updates;
 }

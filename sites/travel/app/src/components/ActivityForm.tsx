@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Form, Input, Select, Button, Space } from "antd";
+
+const { TextArea } = Input;
 import { PageContainer, useAuth } from "@kirkl/shared";
 import { useTravelContext } from "../travel-context";
 import { addActivity, updateActivity, deleteActivity, activityUpdates } from "../firestore";
@@ -37,6 +39,7 @@ export function ActivityForm() {
           costNotes: values.costNotes as string,
           durationEstimate: values.durationEstimate as string,
           confirmationCode: values.confirmationCode as string,
+          details: values.details as string,
         }));
         navigate(-1);
       } else {
@@ -52,6 +55,7 @@ export function ActivityForm() {
           costNotes: (values.costNotes as string) || "",
           durationEstimate: (values.durationEstimate as string) || "",
           confirmationCode: (values.confirmationCode as string) || "",
+          details: (values.details as string) || "",
           rating: null,
           ratingCount: null,
           photoRef: "",
@@ -90,6 +94,7 @@ export function ActivityForm() {
                 costNotes: existing.costNotes,
                 durationEstimate: existing.durationEstimate,
                 confirmationCode: existing.confirmationCode,
+                details: existing.details,
               }
             : { category: "Other" }
         }
@@ -107,8 +112,12 @@ export function ActivityForm() {
           <Input placeholder="e.g., Kyoto" />
         </Form.Item>
 
-        <Form.Item name="description" label="Note" extra="Brief qualifier only. Don't repeat cost, duration, or booking info.">
+        <Form.Item name="description" label="Note" extra="Brief qualifier only.">
           <Input maxLength={100} showCount placeholder="e.g., Book day of, Arrive early, Waitlist" />
+        </Form.Item>
+
+        <Form.Item name="details" label="Details" extra="What to do, what to know, logistics. Shown in day view.">
+          <TextArea rows={4} placeholder="e.g., Park at the north lot. Trail starts behind the visitor center. Bring water — no facilities after the trailhead. Best views from the second overlook." />
         </Form.Item>
 
         <Space size="middle">

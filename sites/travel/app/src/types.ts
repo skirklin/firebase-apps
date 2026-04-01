@@ -128,6 +128,7 @@ export interface Activity {
   costNotes: string;
   durationEstimate: string;
   confirmationCode: string;
+  details: string;
   rating: number | null;
   ratingCount: number | null;
   photoRef: string;
@@ -147,6 +148,7 @@ export interface ActivityStore {
   costNotes: string;
   durationEstimate: string;
   confirmationCode?: string;
+  details?: string;
   rating?: number | null;
   ratingCount?: number | null;
   photoRef?: string;
@@ -168,6 +170,7 @@ export function activityFromStore(id: string, data: ActivityStore): Activity {
     costNotes: data.costNotes || "",
     durationEstimate: data.durationEstimate || "",
     confirmationCode: data.confirmationCode || "",
+    details: data.details || "",
     rating: data.rating ?? null,
     ratingCount: data.ratingCount ?? null,
     photoRef: data.photoRef || "",
@@ -189,6 +192,7 @@ export function activityToStore(activity: Omit<Activity, "id">): ActivityStore {
     costNotes: activity.costNotes,
     durationEstimate: activity.durationEstimate,
     confirmationCode: activity.confirmationCode || undefined,
+    details: activity.details || undefined,
     rating: activity.rating ?? undefined,
     ratingCount: activity.ratingCount ?? undefined,
     photoRef: activity.photoRef || undefined,

@@ -257,15 +257,17 @@ server.tool("create_activity", "Create a new activity. Use the STRUCTURED FIELDS
   lat: z.number().optional().describe("Latitude"),
   lng: z.number().optional().describe("Longitude"),
   tripId: z.string().describe("Trip this activity belongs to"),
-  description: z.string().default("").describe("Brief qualifying note ONLY. NOT for cost, duration, or booking info. Under 100 chars."),
+  description: z.string().default("").describe("Brief qualifying note ONLY. Under 100 chars. e.g. 'Book day of', 'Waitlist'"),
+  details: z.string().optional().describe("Long-form info: what to do, logistics, tips. Shown in day view and hover."),
   costNotes: z.string().default("").describe("Cost info, e.g. '$20 pp', 'free', '$5 entrance'"),
   durationEstimate: z.string().default("").describe("e.g. '2h', '30m', 'half day', 'evening'"),
   confirmationCode: z.string().optional().describe("Booking/reservation code"),
-}, async ({ name, category, location, placeId, lat, lng, tripId, description, costNotes, durationEstimate, confirmationCode }) => {
+}, async ({ name, category, location, placeId, lat, lng, tripId, description, details, costNotes, durationEstimate, confirmationCode }) => {
   await getLogId();
   const ref = activitiesRef().doc();
   const data = { name, category, location, tripId, description, costNotes, durationEstimate, created: now(), updated: now() };
   if (confirmationCode) data.confirmationCode = confirmationCode;
+  if (details) data.details = details;
   if (placeId) data.placeId = placeId;
   if (lat != null) data.lat = lat;
   if (lng != null) data.lng = lng;
@@ -286,6 +288,7 @@ server.tool("update_activity", "Update an existing activity", {
   costNotes: z.string().optional(),
   durationEstimate: z.string().optional(),
   confirmationCode: z.string().optional().describe("Booking confirmation code"),
+  details: z.string().optional().describe("Long-form description for day view"),
 }, async ({ activityId, ...fields }) => {
   await getLogId();
   const updates = { updated: now() };
