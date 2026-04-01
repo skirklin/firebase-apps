@@ -1,0 +1,331 @@
+import { Timestamp } from "firebase/firestore";
+
+// Trip status values
+export type TripStatus = "Completed" | "Booked" | "Researching" | "Idea" | "Ongoing";
+
+// Activity categories
+export type ActivityCategory =
+  | "Transportation"
+  | "Accommodation"
+  | "Hiking"
+  | "Adventure"
+  | "Food & Dining"
+  | "Sightseeing"
+  | "Shopping"
+  | "Nightlife"
+  | "Culture"
+  | "Relaxation"
+  | "Other";
+
+// ==========================================
+// Travel Log (container)
+// ==========================================
+
+export interface TravelLog {
+  id: string;
+  name: string;
+  owners: string[];
+  created: Date;
+  updated: Date;
+}
+
+export interface TravelLogStore {
+  name: string;
+  owners: string[];
+  created: Timestamp;
+  updated: Timestamp;
+}
+
+export function logFromStore(id: string, data: TravelLogStore): TravelLog {
+  return {
+    id,
+    name: data.name,
+    owners: data.owners,
+    created: data.created.toDate(),
+    updated: data.updated.toDate(),
+  };
+}
+
+// ==========================================
+// Trip
+// ==========================================
+
+export interface Trip {
+  id: string;
+  destination: string;
+  status: TripStatus;
+  region: string;
+  startDate: Date | null;
+  endDate: Date | null;
+  notes: string;
+  sourceRefs: string;
+  flaggedForReview: boolean;
+  reviewComment: string;
+  created: Date;
+  updated: Date;
+}
+
+export interface TripStore {
+  destination: string;
+  status: TripStatus;
+  region: string;
+  startDate: Timestamp | null;
+  endDate: Timestamp | null;
+  notes: string;
+  sourceRefs: string;
+  flaggedForReview: boolean;
+  reviewComment: string;
+  created: Timestamp;
+  updated: Timestamp;
+}
+
+export function tripFromStore(id: string, data: TripStore): Trip {
+  return {
+    id,
+    destination: data.destination,
+    status: data.status || "Idea",
+    region: data.region || "",
+    startDate: data.startDate?.toDate() ?? null,
+    endDate: data.endDate?.toDate() ?? null,
+    notes: data.notes || "",
+    sourceRefs: data.sourceRefs || "",
+    flaggedForReview: data.flaggedForReview || false,
+    reviewComment: data.reviewComment || "",
+    created: data.created.toDate(),
+    updated: data.updated.toDate(),
+  };
+}
+
+export function tripToStore(trip: Omit<Trip, "id">): TripStore {
+  return {
+    destination: trip.destination,
+    status: trip.status,
+    region: trip.region,
+    startDate: trip.startDate ? Timestamp.fromDate(trip.startDate) : null,
+    endDate: trip.endDate ? Timestamp.fromDate(trip.endDate) : null,
+    notes: trip.notes,
+    sourceRefs: trip.sourceRefs,
+    flaggedForReview: trip.flaggedForReview,
+    reviewComment: trip.reviewComment,
+    created: Timestamp.fromDate(trip.created),
+    updated: Timestamp.fromDate(trip.updated),
+  };
+}
+
+// ==========================================
+// Activity
+// ==========================================
+
+export interface Activity {
+  id: string;
+  name: string;
+  category: ActivityCategory;
+  location: string;
+  placeId: string;
+  lat: number | null;
+  lng: number | null;
+  description: string;
+  costNotes: string;
+  durationEstimate: string;
+  confirmationCode: string;
+  rating: number | null;
+  ratingCount: number | null;
+  photoRef: string;
+  tripId: string;
+  created: Date;
+  updated: Date;
+}
+
+export interface ActivityStore {
+  name: string;
+  category: string;
+  location: string;
+  placeId?: string;
+  lat?: number | null;
+  lng?: number | null;
+  description: string;
+  costNotes: string;
+  durationEstimate: string;
+  confirmationCode?: string;
+  rating?: number | null;
+  ratingCount?: number | null;
+  photoRef?: string;
+  tripId: string;
+  created: Timestamp;
+  updated: Timestamp;
+}
+
+export function activityFromStore(id: string, data: ActivityStore): Activity {
+  return {
+    id,
+    name: data.name,
+    category: (data.category as ActivityCategory) || "Other",
+    location: data.location || "",
+    placeId: data.placeId || "",
+    lat: data.lat ?? null,
+    lng: data.lng ?? null,
+    description: data.description || "",
+    costNotes: data.costNotes || "",
+    durationEstimate: data.durationEstimate || "",
+    confirmationCode: data.confirmationCode || "",
+    rating: data.rating ?? null,
+    ratingCount: data.ratingCount ?? null,
+    photoRef: data.photoRef || "",
+    tripId: data.tripId || "",
+    created: data.created.toDate(),
+    updated: data.updated.toDate(),
+  };
+}
+
+export function activityToStore(activity: Omit<Activity, "id">): ActivityStore {
+  return {
+    name: activity.name,
+    category: activity.category,
+    location: activity.location,
+    placeId: activity.placeId || undefined,
+    lat: activity.lat,
+    lng: activity.lng,
+    description: activity.description,
+    costNotes: activity.costNotes,
+    durationEstimate: activity.durationEstimate,
+    confirmationCode: activity.confirmationCode || undefined,
+    rating: activity.rating ?? undefined,
+    ratingCount: activity.ratingCount ?? undefined,
+    photoRef: activity.photoRef || undefined,
+    tripId: activity.tripId,
+    created: Timestamp.fromDate(activity.created),
+    updated: Timestamp.fromDate(activity.updated),
+  };
+}
+
+// ==========================================
+// Itinerary
+// ==========================================
+
+export interface ItinerarySlot {
+  activityId: string;
+  startTime?: string;
+  notes?: string;
+}
+
+export interface ItineraryDay {
+  date?: string; // ISO date for completed trips, empty for hypothetical
+  label: string; // "Day 2 — Sun Sep 8: Zion Narrows"
+  lodgingActivityId?: string; // The accommodation for this night
+  flights?: ItinerarySlot[]; // Flights/major transport for this day
+  slots: ItinerarySlot[]; // Activities (excluding lodging and flights)
+}
+
+export interface Itinerary {
+  id: string;
+  tripId: string;
+  name: string; // "Actual" for completed, "Option A" for ideas
+  isActive: boolean;
+  days: ItineraryDay[];
+  created: Date;
+  updated: Date;
+}
+
+export interface ItineraryStore {
+  tripId: string;
+  name: string;
+  isActive: boolean;
+  days: ItineraryDay[];
+  created: Timestamp;
+  updated: Timestamp;
+}
+
+export function itineraryFromStore(id: string, data: ItineraryStore): Itinerary {
+  return {
+    id,
+    tripId: data.tripId,
+    name: data.name,
+    isActive: data.isActive ?? true,
+    days: data.days || [],
+    created: data.created.toDate(),
+    updated: data.updated.toDate(),
+  };
+}
+
+export function itineraryToStore(itinerary: Omit<Itinerary, "id">): ItineraryStore {
+  return {
+    tripId: itinerary.tripId,
+    name: itinerary.name,
+    isActive: itinerary.isActive,
+    days: itinerary.days,
+    created: Timestamp.fromDate(itinerary.created),
+    updated: Timestamp.fromDate(itinerary.updated),
+  };
+}
+
+// ==========================================
+// User profile extension
+// ==========================================
+
+export type { UserProfile, UserProfileStore } from "@kirkl/shared";
+
+// Status display helpers
+export const STATUS_COLORS: Record<TripStatus, string> = {
+  Completed: "#52c41a",
+  Booked: "#1677ff",
+  Ongoing: "#fa8c16",
+  Researching: "#722ed1",
+  Idea: "#8c8c8c",
+};
+
+export const STATUS_ORDER: TripStatus[] = [
+  "Ongoing",
+  "Booked",
+  "Researching",
+  "Idea",
+  "Completed",
+];
+
+export function formatDateRange(trip: Trip): string {
+  if (!trip.startDate) return "";
+  const start = trip.startDate.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+  if (!trip.endDate) return start;
+  const end = trip.endDate.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+  return `${start} — ${end}`;
+}
+
+// ==========================================
+// Geo utilities
+// ==========================================
+
+/** Haversine distance in miles between two lat/lng points */
+export function haversineDistance(
+  a: { lat: number; lng: number },
+  b: { lat: number; lng: number }
+): number {
+  const R = 3959; // Earth radius in miles
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const sin2Lat = Math.sin(dLat / 2) ** 2;
+  const sin2Lng = Math.sin(dLng / 2) ** 2;
+  const h = sin2Lat + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * sin2Lng;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+
+/** Total travel distance for a sequence of activities (skips those without coords) */
+export function dayTravelDistance(activities: Activity[]): number {
+  const withCoords = activities.filter((a) => a.lat != null && a.lng != null);
+  if (withCoords.length < 2) return 0;
+  let total = 0;
+  for (let i = 1; i < withCoords.length; i++) {
+    total += haversineDistance(
+      { lat: withCoords[i - 1].lat!, lng: withCoords[i - 1].lng! },
+      { lat: withCoords[i].lat!, lng: withCoords[i].lng! }
+    );
+  }
+  return total;
+}

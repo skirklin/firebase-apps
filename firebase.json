@@ -32,6 +32,13 @@
       "ignore": ["firebase.json", "**/.*"]
     },
     {
+      "target": "travel",
+      "public": "sites/travel/app/dist",
+      "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+      "rewrites": [{ "source": "**", "destination": "/index.html" }],
+      "predeploy": ["npm --prefix sites/travel/app run build"]
+    },
+    {
       "target": "upkeep",
       "public": "sites/upkeep/app/dist",
       "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],

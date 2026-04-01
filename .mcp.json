@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "travel": {
+      "command": "node",
+      "args": ["/home/skirklin/projects/firebase/scripts/travel/mcp/server.js"]
+    }
+  }
+}

@@ -220,6 +220,91 @@ Task completion records.
 
 ---
 
+### `travelLogs/{logId}` (Travel)
+
+Travel trip planning and history containers.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | string | Log name |
+| `owners` | string[] | User IDs with access |
+| `created` | Timestamp | Creation time |
+| `updated` | Timestamp | Last update time |
+
+User profile extension: `users/{userId}.travelSlugs` — `{slug: logId}` mapping.
+
+#### `travelLogs/{logId}/trips/{tripId}`
+
+Individual trips (completed, booked, or ideas).
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `destination` | string | Trip destination |
+| `status` | string | `"Completed"`, `"Booked"`, `"Researching"`, `"Idea"`, `"Ongoing"` |
+| `region` | string | Geographic region (e.g., "Asia", "Southwest US") |
+| `startDate` | Timestamp? | Trip start date |
+| `endDate` | Timestamp? | Trip end date |
+| `notes` | string | Free-form notes |
+| `sourceRefs` | string | Multi-line, prefixed with `Gmail:`, `Drive:`, `Calendar:` |
+| `flaggedForReview` | boolean | Whether trip needs review |
+| `reviewComment` | string | Review flag comment |
+| `created` | Timestamp | Creation time |
+| `updated` | Timestamp | Last update time |
+
+#### `travelLogs/{logId}/activities/{activityId}`
+
+Activities that can be referenced by itineraries.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | string | Activity name |
+| `category` | string | Category (Transportation, Accommodation, Hiking, etc.) |
+| `location` | string | City/area |
+| `placeId` | string? | Google Place ID for map linking and rich place data |
+| `lat` | number? | Latitude (cached from placeId or manually set) |
+| `lng` | number? | Longitude (cached from placeId or manually set) |
+| `description` | string | Details |
+| `costNotes` | string | Cost information |
+| `durationEstimate` | string | How long it takes |
+| `confirmationCode` | string? | Booking/reservation confirmation code |
+| `tripId` | string | Associated trip ID |
+| `created` | Timestamp | Creation time |
+| `updated` | Timestamp | Last update time |
+
+#### `travelLogs/{logId}/itineraries/{itineraryId}`
+
+Day-by-day plans referencing activities.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `tripId` | string | Associated trip ID |
+| `name` | string | Itinerary name ("Actual", "Option A", etc.) |
+| `isActive` | boolean | Whether this is the active itinerary |
+| `days` | ItineraryDay[] | Array of day plans |
+| `created` | Timestamp | Creation time |
+| `updated` | Timestamp | Last update time |
+
+**ItineraryDay structure:**
+```typescript
+{
+  date?: string,                // ISO date for completed trips
+  label: string,                // "Day 2 — Sun Sep 8: Zion Narrows"
+  lodgingActivityId?: string,   // Activity ID for this night's accommodation
+  flights?: [{                  // Flights/major transport for this day
+    activityId: string,
+    startTime?: string,
+    notes?: string
+  }],
+  slots: [{                     // Activities (excluding lodging and flights)
+    activityId: string,
+    startTime?: string,         // "9:00 AM"
+    notes?: string              // Per-slot notes
+  }]
+}
+```
+
+---
+
 ## Indexes
 
 See `firestore.indexes.json` for composite indexes. Key indexes:
@@ -230,6 +315,6 @@ See `firestore.indexes.json` for composite indexes. Key indexes:
 ## Security Rules
 
 See `firestore.rules`. General pattern:
-- Container documents (`boxes`, `lists`, `lifeLogs`, `taskLists`) check `owners` array
+- Container documents (`boxes`, `lists`, `lifeLogs`, `taskLists`, `travelLogs`) check `owners` array
 - Subcollections inherit access from parent container via `get()` lookup
 - Some containers allow any authenticated user to read metadata (for sharing via ID)
