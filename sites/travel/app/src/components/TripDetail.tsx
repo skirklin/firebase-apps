@@ -806,13 +806,20 @@ function ItineraryTimeline({
                 )}
                 <ExpandedSlotBody>
                   <ExpandedSlotName>
-                    {actUrl ? (
-                      <ExternalLink href={actUrl} target="_blank" rel="noopener noreferrer">{activity?.name || slot.activityId}</ExternalLink>
-                    ) : (activity?.name || slot.activityId)}
+                    {activity?.name || slot.activityId}
+                    {actUrl && (
+                      <ExternalLink href={actUrl} target="_blank" rel="noopener noreferrer" style={{ color: "#8c8c8c", marginLeft: 4, fontSize: 11 }}>
+                        <EnvironmentOutlined />
+                      </ExternalLink>
+                    )}
                   </ExpandedSlotName>
                   <ExpandedSlotMeta>
                     {activity?.rating != null && <span style={{ color: "#fa8c16" }}>★{activity.rating}</span>}
-                    {activity?.location && <span><EnvironmentOutlined /> {activity.location}</span>}
+                    {activity?.location && (
+                      <ExternalLink href={`https://www.google.com/maps/search/${encodeURIComponent(activity.location)}`} target="_blank" rel="noopener noreferrer" style={{ color: "#8c8c8c" }}>
+                        {activity.location}
+                      </ExternalLink>
+                    )}
                     {activity?.durationEstimate && <span><ClockCircleOutlined /> {activity.durationEstimate}</span>}
                     {activity?.costNotes && <span><DollarOutlined /> {activity.costNotes}</span>}
                   </ExpandedSlotMeta>
