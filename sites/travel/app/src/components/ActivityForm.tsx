@@ -6,7 +6,7 @@ const { TextArea } = Input;
 import { PageContainer, useAuth } from "@kirkl/shared";
 import { useTravelContext } from "../travel-context";
 import { addActivity, updateActivity, deleteActivity, activityUpdates } from "../firestore";
-import type { ActivityCategory } from "../types";
+import type { ActivityCategory, Activity } from "../types";
 
 const CATEGORIES: ActivityCategory[] = [
   "Transportation", "Accommodation", "Hiking", "Adventure",
@@ -40,6 +40,7 @@ export function ActivityForm() {
           durationEstimate: values.durationEstimate as string,
           confirmationCode: values.confirmationCode as string,
           details: values.details as string,
+          setting: values.setting as string,
         }));
         navigate(-1);
       } else {
@@ -56,6 +57,7 @@ export function ActivityForm() {
           durationEstimate: (values.durationEstimate as string) || "",
           confirmationCode: (values.confirmationCode as string) || "",
           details: (values.details as string) || "",
+          setting: ((values.setting as string) || "") as Activity["setting"],
           rating: null,
           ratingCount: null,
           photoRef: "",
@@ -95,6 +97,7 @@ export function ActivityForm() {
                 durationEstimate: existing.durationEstimate,
                 confirmationCode: existing.confirmationCode,
                 details: existing.details,
+                setting: existing.setting,
               }
             : { category: "Other" }
         }
@@ -104,9 +107,19 @@ export function ActivityForm() {
           <Input placeholder="e.g., Visit Fushimi Inari Shrine" />
         </Form.Item>
 
-        <Form.Item name="category" label="Category">
-          <Select options={CATEGORIES.map((c) => ({ label: c, value: c }))} />
-        </Form.Item>
+        <Space size="middle">
+          <Form.Item name="category" label="Category">
+            <Select options={CATEGORIES.map((c) => ({ label: c, value: c }))} style={{ minWidth: 150 }} />
+          </Form.Item>
+          <Form.Item name="setting" label="Setting">
+            <Select style={{ minWidth: 100 }} options={[
+              { label: "—", value: "" },
+              { label: "Outdoor", value: "outdoor" },
+              { label: "Indoor", value: "indoor" },
+              { label: "Either", value: "either" },
+            ]} />
+          </Form.Item>
+        </Space>
 
         <Form.Item name="location" label="Location">
           <Input placeholder="e.g., Kyoto" />

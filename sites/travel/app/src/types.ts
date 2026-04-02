@@ -129,6 +129,7 @@ export interface Activity {
   durationEstimate: string;
   confirmationCode: string;
   details: string;
+  setting: "outdoor" | "indoor" | "either" | "";
   rating: number | null;
   ratingCount: number | null;
   photoRef: string;
@@ -149,6 +150,7 @@ export interface ActivityStore {
   durationEstimate: string;
   confirmationCode?: string;
   details?: string;
+  setting?: string;
   rating?: number | null;
   ratingCount?: number | null;
   photoRef?: string;
@@ -171,6 +173,7 @@ export function activityFromStore(id: string, data: ActivityStore): Activity {
     durationEstimate: data.durationEstimate || "",
     confirmationCode: data.confirmationCode || "",
     details: data.details || "",
+    setting: (data.setting as Activity["setting"]) || "",
     rating: data.rating ?? null,
     ratingCount: data.ratingCount ?? null,
     photoRef: data.photoRef || "",
@@ -193,6 +196,7 @@ export function activityToStore(activity: Omit<Activity, "id">): ActivityStore {
     durationEstimate: activity.durationEstimate,
     confirmationCode: activity.confirmationCode || undefined,
     details: activity.details || undefined,
+    setting: activity.setting || undefined,
     rating: activity.rating ?? undefined,
     ratingCount: activity.ratingCount ?? undefined,
     photoRef: activity.photoRef || undefined,

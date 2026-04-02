@@ -242,6 +242,7 @@ export function activityUpdates(fields: {
   durationEstimate?: string;
   confirmationCode?: string;
   details?: string;
+  setting?: string;
   tripId?: string;
 }): Partial<ActivityStore> {
   const updates: Partial<ActivityStore> = {};
@@ -256,6 +257,7 @@ export function activityUpdates(fields: {
   if (fields.durationEstimate !== undefined) updates.durationEstimate = fields.durationEstimate;
   if (fields.confirmationCode !== undefined) updates.confirmationCode = fields.confirmationCode;
   if (fields.details !== undefined) updates.details = fields.details;
+  if (fields.setting !== undefined) updates.setting = fields.setting;
   if (fields.tripId !== undefined) updates.tripId = fields.tripId;
   return updates;
 }
