@@ -305,6 +305,34 @@ export function formatDateRange(trip: Trip): string {
 // Geo utilities
 // ==========================================
 
+/** Parse a duration string like "2-3 hours", "45m", "half day", "evening" into hours */
+export function parseDurationHours(dur: string): number {
+  if (!dur) return 0;
+  const d = dur.toLowerCase().trim();
+  if (d === "full day") return 6;
+  if (d === "half day") return 3;
+  if (d === "evening") return 3;
+  // "2-3 hours" → average
+  const rangeHr = d.match(/(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)\s*h/);
+  if (rangeHr) return (parseFloat(rangeHr[1]) + parseFloat(rangeHr[2])) / 2;
+  // "2h", "2 hours", "2.5h"
+  const singleHr = d.match(/^(\d+(?:\.\d+)?)\s*h/);
+  if (singleHr) return parseFloat(singleHr[1]);
+  // "45m", "45 min", "30 min"
+  const mins = d.match(/^(\d+)\s*m/);
+  if (mins) return parseInt(mins[1]) / 60;
+  // "4.5 hours"
+  const hoursWord = d.match(/(\d+(?:\.\d+)?)\s*hours?/);
+  if (hoursWord) return parseFloat(hoursWord[1]);
+  return 0;
+}
+
+/** Estimate driving time in hours from haversine distance (rough: 30mph average with stops) */
+export function estimateDriveHours(miles: number): number {
+  if (miles <= 0) return 0;
+  return miles / 30;
+}
+
 /** Haversine distance in miles between two lat/lng points */
 export function haversineDistance(
   a: { lat: number; lng: number },
@@ -318,6 +346,30 @@ export function haversineDistance(
   const sin2Lng = Math.sin(dLng / 2) ** 2;
   const h = sin2Lat + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * sin2Lng;
   return 2 * R * Math.asin(Math.sqrt(h));
+}
+
+export interface DayLoad {
+  activityHours: number;
+  driveHours: number;
+  driveMiles: number;
+  totalHours: number;
+  level: "light" | "moderate" | "full" | "overpacked";
+}
+
+/** Calculate the load for a day's activities */
+export function calculateDayLoad(activities: Activity[]): DayLoad {
+  const activityHours = activities.reduce((sum, a) => sum + parseDurationHours(a.durationEstimate), 0);
+  const driveMiles = dayTravelDistance(activities);
+  const driveHours = estimateDriveHours(driveMiles);
+  const totalHours = activityHours + driveHours;
+
+  let level: DayLoad["level"];
+  if (totalHours <= 4) level = "light";
+  else if (totalHours <= 7) level = "moderate";
+  else if (totalHours <= 10) level = "full";
+  else level = "overpacked";
+
+  return { activityHours, driveHours, driveMiles, totalHours, level };
 }
 
 /** Total travel distance for a sequence of activities (skips those without coords) */

@@ -40,12 +40,15 @@ import {
 import {
   STATUS_COLORS,
   formatDateRange,
+  calculateDayLoad,
   type Activity,
   type Itinerary,
+  type DayLoad,
 } from "../types";
 import { ItineraryBuilder } from "./ItineraryBuilder";
 import { ItineraryCompare } from "./ItineraryCompare";
 import { ItineraryMap } from "./ItineraryMap";
+import { ReadinessDashboard } from "./ReadinessDashboard";
 
 // Link helpers
 function mapsUrl(activity: Activity): string | null {
@@ -340,6 +343,12 @@ export function TripDetail() {
         </FlagBanner>
       )}
 
+      {(trip.status === "Booked" || trip.status === "Ongoing" || trip.status === "Researching") && (
+        <Section>
+          <ReadinessDashboard trip={trip} activities={activities} itineraries={itineraries} />
+        </Section>
+      )}
+
       <TwoColumn>
         <div>
           {/* Itinerary section */}
@@ -565,6 +574,23 @@ const CompactDayCard = styled.div`
   }
 `;
 
+const LOAD_COLORS = {
+  light: "#52c41a",
+  moderate: "#1677ff",
+  full: "#fa8c16",
+  overpacked: "#ff4d4f",
+};
+
+const LoadBadge = styled.span<{ $level: DayLoad["level"] }>`
+  font-size: 9px;
+  font-weight: 600;
+  color: ${(p) => LOAD_COLORS[p.$level]};
+  background: ${(p) => LOAD_COLORS[p.$level]}15;
+  border-radius: 3px;
+  padding: 0 4px;
+  white-space: nowrap;
+`;
+
 const CompactDayTitle = styled.div`
   font-size: 11px;
   font-weight: 600;
@@ -743,6 +769,10 @@ function ItineraryTimeline({
     if (!day) return null;
     const lodging = day.lodgingActivityId ? activityMap.get(day.lodgingActivityId) : null;
     const flights = (day.flights || []).map((f) => ({ ...f, activity: activityMap.get(f.activityId) }));
+    const expandedActivities = day.slots
+      .map((s) => activityMap.get(s.activityId))
+      .filter((a): a is Activity => a != null);
+    const load = calculateDayLoad(expandedActivities);
 
     const totalDays = itinerary.days.length;
     const hasPrev = focusDay > 0;
@@ -764,6 +794,12 @@ function ItineraryTimeline({
                 style={{ marginLeft: 8, color: "#8c8c8c", fontSize: 12 }}>
                 All days
               </Button>
+              {load.totalHours > 0 && (
+                <LoadBadge $level={load.level} style={{ fontSize: 11, padding: "1px 6px" }}>
+                  {load.activityHours.toFixed(1)}h activities{load.driveMiles > 5 ? ` + ~${Math.round(load.driveMiles)} mi driving` : ""}
+                  {load.level === "overpacked" && " ⚠ overpacked"}
+                </LoadBadge>
+              )}
             </div>
             {lodging && (() => {
               const url = mapsUrl(lodging);
@@ -851,11 +887,17 @@ function ItineraryTimeline({
           ...f,
           activity: activityMap.get(f.activityId),
         }));
+        const dayActivities = day.slots
+          .map((s) => activityMap.get(s.activityId))
+          .filter((a): a is Activity => a != null);
+        const load = calculateDayLoad(dayActivities);
 
         return (
           <CompactDayCard key={i} onClick={() => onDayClick(i)} style={{ cursor: "pointer" }}>
             <CompactDayTitle>
-              <span>Day {i + 1}{day.date ? ` — ${new Date(day.date + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}` : ""}</span>
+              <span>
+                Day {i + 1}{day.date ? ` — ${new Date(day.date + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}` : ""}
+              </span>
               {lodging && (() => {
                 const url = mapsUrl(lodging);
                 return (
@@ -865,6 +907,11 @@ function ItineraryTimeline({
                   </LodgingBadge>
                 );
               })()}
+              {load.totalHours > 0 && (
+                <LoadBadge $level={load.level}>
+                  {load.activityHours.toFixed(1)}h{load.driveMiles > 5 ? ` + ${Math.round(load.driveMiles)}mi` : ""}
+                </LoadBadge>
+              )}
             </CompactDayTitle>
 
             {flights.map((f, j) => (
