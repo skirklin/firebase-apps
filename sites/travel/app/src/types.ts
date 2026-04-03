@@ -16,6 +16,13 @@ export interface ChecklistTemplateItem {
   category: string; // "logistics", "packing", "people", "documents", "prep"
 }
 
+// Booking requirement on an activity
+export interface BookingRequirement {
+  daysBefore: number; // days before trip start to take action
+  action: string; // what to do, e.g. "Book tickets at museofridakahlo.org.mx"
+  done?: boolean; // tracked per-activity, not per-trip
+}
+
 // Activity categories
 export type ActivityCategory =
   | "Transportation"
@@ -169,6 +176,7 @@ export interface Activity {
   confirmationCode: string;
   details: string;
   setting: "outdoor" | "indoor" | "either" | "";
+  bookingReqs: BookingRequirement[];
   rating: number | null;
   ratingCount: number | null;
   photoRef: string;
@@ -190,6 +198,7 @@ export interface ActivityStore {
   confirmationCode?: string;
   details?: string;
   setting?: string;
+  bookingReqs?: BookingRequirement[];
   rating?: number | null;
   ratingCount?: number | null;
   photoRef?: string;
@@ -213,6 +222,7 @@ export function activityFromStore(id: string, data: ActivityStore): Activity {
     confirmationCode: data.confirmationCode || "",
     details: data.details || "",
     setting: (data.setting as Activity["setting"]) || "",
+    bookingReqs: data.bookingReqs || [],
     rating: data.rating ?? null,
     ratingCount: data.ratingCount ?? null,
     photoRef: data.photoRef || "",
@@ -236,6 +246,7 @@ export function activityToStore(activity: Omit<Activity, "id">): ActivityStore {
     confirmationCode: activity.confirmationCode || undefined,
     details: activity.details || undefined,
     setting: activity.setting || undefined,
+    bookingReqs: activity.bookingReqs.length > 0 ? activity.bookingReqs : undefined,
     rating: activity.rating ?? undefined,
     ratingCount: activity.ratingCount ?? undefined,
     photoRef: activity.photoRef || undefined,

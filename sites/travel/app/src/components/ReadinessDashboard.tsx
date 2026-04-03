@@ -6,7 +6,7 @@ import {
   ClockCircleOutlined,
 } from "@ant-design/icons";
 import styled from "styled-components";
-import type { Trip, Activity, Itinerary } from "../types";
+import type { Trip, Activity, Itinerary, BookingRequirement } from "../types";
 
 const Container = styled.div`
   display: flex;
@@ -197,16 +197,56 @@ export function ReadinessDashboard({ trip, activities, itineraries }: ReadinessD
       });
     }
 
-    // Time-based reminders
+    // Aggregate booking requirements from all activities
     if (daysUntil != null && daysUntil > 0) {
+      const allReqs: { activity: Activity; req: BookingRequirement }[] = [];
+      for (const a of activities) {
+        for (const req of a.bookingReqs || []) {
+          allReqs.push({ activity: a, req });
+        }
+      }
+
+      // Sort by deadline (most urgent first)
+      allReqs.sort((a, b) => b.req.daysBefore - a.req.daysBefore);
+
+      // Show overdue and upcoming booking tasks
+      for (const { activity, req } of allReqs) {
+        const deadline = req.daysBefore;
+        const isOverdue = daysUntil <= deadline;
+        const isDone = req.done;
+
+        if (isDone) {
+          result.push({
+            status: "done",
+            category: "Booking Tasks",
+            title: `${activity.name}: ${req.action}`,
+            detail: `Due ${deadline} days before trip`,
+          });
+        } else if (isOverdue) {
+          result.push({
+            status: "needed",
+            category: "Booking Tasks",
+            title: `${activity.name}: ${req.action}`,
+            detail: `Was due ${deadline} days before trip — ${daysUntil} days left!`,
+          });
+        } else if (daysUntil <= deadline + 7) {
+          // Coming up within a week of its deadline
+          result.push({
+            status: "warning",
+            category: "Booking Tasks",
+            title: `${activity.name}: ${req.action}`,
+            detail: `Due ${deadline} days before trip (${deadline - daysUntil} days from now)`,
+          });
+        }
+      }
+
+      // General time-based reminders
       if (daysUntil <= 1) {
-        result.push({ status: "warning", category: "Prep", title: "Trip is tomorrow!", detail: "Download offline maps, charge devices, check in for flights" });
+        result.push({ status: "warning", category: "Prep", title: "Trip is tomorrow!", detail: "Check in for flights, charge devices, download offline maps" });
       } else if (daysUntil <= 3) {
-        result.push({ status: "warning", category: "Prep", title: `${daysUntil} days away`, detail: "Check weather forecast, confirm reservations, pack" });
+        result.push({ status: "warning", category: "Prep", title: `${daysUntil} days away`, detail: "Check weather, confirm reservations, pack" });
       } else if (daysUntil <= 7) {
-        result.push({ status: "warning", category: "Prep", title: `${daysUntil} days away`, detail: "Check weather, start packing list, notify bank of travel" });
-      } else if (daysUntil <= 21) {
-        result.push({ status: "needed", category: "Prep", title: `${daysUntil} days away`, detail: "Book activities that need advance reservation" });
+        result.push({ status: "warning", category: "Prep", title: `${daysUntil} days away`, detail: "Check weather, start packing, notify bank" });
       }
     }
 
