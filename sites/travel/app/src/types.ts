@@ -3,6 +3,19 @@ import { Timestamp } from "firebase/firestore";
 // Trip status values
 export type TripStatus = "Completed" | "Booked" | "Researching" | "Idea" | "Ongoing";
 
+// Checklist templates (stored on the travel log, shared across trips)
+export interface ChecklistTemplate {
+  id: string;
+  name: string; // "General Trip Prep", "International", "Camping"
+  items: ChecklistTemplateItem[];
+}
+
+export interface ChecklistTemplateItem {
+  id: string;
+  text: string;
+  category: string; // "logistics", "packing", "people", "documents", "prep"
+}
+
 // Activity categories
 export type ActivityCategory =
   | "Transportation"
@@ -25,6 +38,7 @@ export interface TravelLog {
   id: string;
   name: string;
   owners: string[];
+  checklists: ChecklistTemplate[];
   created: Date;
   updated: Date;
 }
@@ -32,15 +46,36 @@ export interface TravelLog {
 export interface TravelLogStore {
   name: string;
   owners: string[];
+  checklists?: ChecklistTemplate[];
   created: Timestamp;
   updated: Timestamp;
 }
+
+export const DEFAULT_CHECKLIST: ChecklistTemplate = {
+  id: "general",
+  name: "General Trip Prep",
+  items: [
+    { id: "weather", text: "Check weather forecast for trip dates", category: "prep" },
+    { id: "people", text: "Reach out to anyone I know in the area", category: "people" },
+    { id: "maps", text: "Download offline maps for the area", category: "prep" },
+    { id: "bank", text: "Notify bank of travel dates", category: "documents" },
+    { id: "insurance", text: "Check travel insurance coverage", category: "documents" },
+    { id: "mail", text: "Hold mail / arrange package pickup", category: "prep" },
+    { id: "pets", text: "Arrange pet care", category: "prep" },
+    { id: "plants", text: "Arrange plant watering", category: "prep" },
+    { id: "chargers", text: "Charge all devices, pack chargers", category: "packing" },
+    { id: "meds", text: "Pack medications and first aid", category: "packing" },
+    { id: "copies", text: "Save copies of confirmations offline", category: "documents" },
+    { id: "checkin", text: "Check in for flights (24h before)", category: "logistics" },
+  ],
+};
 
 export function logFromStore(id: string, data: TravelLogStore): TravelLog {
   return {
     id,
     name: data.name,
     owners: data.owners,
+    checklists: data.checklists || [DEFAULT_CHECKLIST],
     created: data.created.toDate(),
     updated: data.updated.toDate(),
   };
@@ -61,6 +96,7 @@ export interface Trip {
   sourceRefs: string;
   flaggedForReview: boolean;
   reviewComment: string;
+  checklistDone: Record<string, boolean>; // templateItemId → done, per trip
   created: Date;
   updated: Date;
 }
@@ -75,6 +111,7 @@ export interface TripStore {
   sourceRefs: string;
   flaggedForReview: boolean;
   reviewComment: string;
+  checklistDone?: Record<string, boolean>;
   created: Timestamp;
   updated: Timestamp;
 }
@@ -91,6 +128,7 @@ export function tripFromStore(id: string, data: TripStore): Trip {
     sourceRefs: data.sourceRefs || "",
     flaggedForReview: data.flaggedForReview || false,
     reviewComment: data.reviewComment || "",
+    checklistDone: data.checklistDone || {},
     created: data.created.toDate(),
     updated: data.updated.toDate(),
   };
@@ -107,6 +145,7 @@ export function tripToStore(trip: Omit<Trip, "id">): TripStore {
     sourceRefs: trip.sourceRefs,
     flaggedForReview: trip.flaggedForReview,
     reviewComment: trip.reviewComment,
+    checklistDone: Object.keys(trip.checklistDone).length > 0 ? trip.checklistDone : undefined,
     created: Timestamp.fromDate(trip.created),
     updated: Timestamp.fromDate(trip.updated),
   };

@@ -49,6 +49,7 @@ import { ItineraryBuilder } from "./ItineraryBuilder";
 import { ItineraryCompare } from "./ItineraryCompare";
 import { ItineraryMap } from "./ItineraryMap";
 import { ReadinessDashboard } from "./ReadinessDashboard";
+import { TripChecklist } from "./TripChecklist";
 
 // Link helpers
 function mapsUrl(activity: Activity): string | null {
@@ -346,6 +347,9 @@ export function TripDetail() {
       {(trip.status === "Booked" || trip.status === "Ongoing" || trip.status === "Researching") && (
         <Section>
           <ReadinessDashboard trip={trip} activities={activities} itineraries={itineraries} />
+          <div style={{ marginTop: 16 }}>
+            <TripChecklist trip={trip} />
+          </div>
         </Section>
       )}
 

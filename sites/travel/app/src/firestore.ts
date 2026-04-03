@@ -16,6 +16,7 @@ import type {
   UserProfileStore,
   TripStatus,
   ActivityCategory,
+  ChecklistTemplate,
 } from "./types";
 import { tripToStore, activityToStore, itineraryToStore } from "./types";
 import type { Trip, Activity, Itinerary } from "./types";
@@ -260,4 +261,21 @@ export function activityUpdates(fields: {
   if (fields.setting !== undefined) updates.setting = fields.setting;
   if (fields.tripId !== undefined) updates.tripId = fields.tripId;
   return updates;
+}
+
+// ==========================================
+// Checklist operations
+// ==========================================
+
+export async function toggleChecklistItem(tripId: string, itemId: string, done: boolean) {
+  const tripRef = getTripRef(tripId);
+  await updateDoc(tripRef, {
+    [`checklistDone.${itemId}`]: done,
+    updated: Timestamp.now(),
+  });
+}
+
+export async function updateLogChecklists(checklists: ChecklistTemplate[]) {
+  const logRef = getLogRef();
+  await updateDoc(logRef, { checklists, updated: Timestamp.now() });
 }
