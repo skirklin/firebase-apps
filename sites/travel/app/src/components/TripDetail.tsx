@@ -344,15 +344,6 @@ export function TripDetail() {
         </FlagBanner>
       )}
 
-      {(trip.status === "Booked" || trip.status === "Ongoing" || trip.status === "Researching") && (
-        <Section>
-          <ReadinessDashboard trip={trip} activities={activities} itineraries={itineraries} />
-          <div style={{ marginTop: 16 }}>
-            <TripChecklist trip={trip} />
-          </div>
-        </Section>
-      )}
-
       <TwoColumn>
         <div>
           {/* Itinerary section */}
@@ -390,6 +381,16 @@ export function TripDetail() {
                     </SourceRef>
                   );
                 })}
+              </div>
+            </Section>
+          )}
+
+          {/* Readiness + Checklist — below content */}
+          {(trip.status === "Booked" || trip.status === "Ongoing" || trip.status === "Researching") && (
+            <Section>
+              <ReadinessDashboard trip={trip} activities={activities} itineraries={itineraries} />
+              <div style={{ marginTop: 16 }}>
+                <TripChecklist trip={trip} />
               </div>
             </Section>
           )}
