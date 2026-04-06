@@ -31,3 +31,4 @@ __pycache__/
 test-results/
 playwright-report/
 .last-run.json
+scripts/travel/mcp/certs/
