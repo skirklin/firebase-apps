@@ -11,6 +11,7 @@ import {
   Tabs,
   Select,
   Popover,
+  Collapse,
 } from "antd";
 import {
   ArrowLeftOutlined,
@@ -359,41 +360,64 @@ export function TripDetail() {
             />
           )}
 
-          {/* Notes */}
-          {trip.notes && (
-            <Section>
-              <SectionTitle style={{ marginBottom: 12 }}>Notes</SectionTitle>
-              <NotesCard>{trip.notes}</NotesCard>
-            </Section>
-          )}
+          {/* Collapsible sections */}
+          {(() => {
+            const showReadiness = trip.status === "Booked" || trip.status === "Ongoing" || trip.status === "Researching";
+            const panels = [];
 
-          {/* Sources */}
-          {sourceRefLines.length > 0 && (
-            <Section>
-              <SectionTitle style={{ marginBottom: 12 }}>Sources</SectionTitle>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {sourceRefLines.map((line, i) => {
-                  const type = line.split(":")[0] || "Other";
-                  const refUrl = sourceRefUrl(line);
-                  return (
-                    <SourceRef key={i} $type={type} as={refUrl ? "a" : "div"} href={refUrl || undefined} target="_blank" rel="noopener noreferrer" style={refUrl ? { cursor: "pointer" } : undefined}>
-                      {line}
-                    </SourceRef>
-                  );
-                })}
-              </div>
-            </Section>
-          )}
+            if (showReadiness) {
+              panels.push({
+                key: "readiness",
+                label: "Readiness & Prep",
+                children: (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                    <ReadinessDashboard trip={trip} activities={activities} itineraries={itineraries} />
+                    <TripChecklist trip={trip} />
+                  </div>
+                ),
+              });
+            }
 
-          {/* Readiness + Checklist — below content */}
-          {(trip.status === "Booked" || trip.status === "Ongoing" || trip.status === "Researching") && (
-            <Section>
-              <ReadinessDashboard trip={trip} activities={activities} itineraries={itineraries} />
-              <div style={{ marginTop: 16 }}>
-                <TripChecklist trip={trip} />
-              </div>
-            </Section>
-          )}
+            if (trip.notes) {
+              panels.push({
+                key: "notes",
+                label: "Notes",
+                children: <NotesCard>{trip.notes}</NotesCard>,
+              });
+            }
+
+            if (sourceRefLines.length > 0) {
+              panels.push({
+                key: "sources",
+                label: `Sources (${sourceRefLines.length})`,
+                children: (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    {sourceRefLines.map((line, i) => {
+                      const type = line.split(":")[0] || "Other";
+                      const refUrl = sourceRefUrl(line);
+                      return (
+                        <SourceRef key={i} $type={type} as={refUrl ? "a" : "div"} href={refUrl || undefined} target="_blank" rel="noopener noreferrer" style={refUrl ? { cursor: "pointer" } : undefined}>
+                          {line}
+                        </SourceRef>
+                      );
+                    })}
+                  </div>
+                ),
+              });
+            }
+
+            if (panels.length === 0) return null;
+
+            return (
+              <Collapse
+                size="small"
+                ghost
+                defaultActiveKey={showReadiness ? ["readiness"] : []}
+                items={panels}
+                style={{ marginTop: 8 }}
+              />
+            );
+          })()}
         </div>
 
         {/* Sticky map on the right */}
