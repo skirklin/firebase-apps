@@ -107,6 +107,7 @@ function DayRoute({ path, color }: { path: { lat: number; lng: number }[]; color
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const routesNs = (google.maps as any).routes;
     if (!routesNs?.Route?.computeRoutes) {
+      console.warn("Routes API not available. google.maps.routes:", routesNs);
       drawFallback();
       return;
     }
@@ -137,7 +138,8 @@ function DayRoute({ path, color }: { path: { lat: number; lng: number }[]; color
           drawFallback();
         }
       })
-      .catch(() => {
+      .catch((err: unknown) => {
+        console.warn("Routes API failed, using straight lines:", err);
         drawFallback();
       });
 

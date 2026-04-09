@@ -267,7 +267,7 @@ server.tool("create_activity", "Create a new activity. Use the STRUCTURED FIELDS
   costNotes: z.string().default("").describe("Cost info, e.g. '$20 pp', 'free', '$5 entrance'"),
   durationEstimate: z.string().default("").describe("e.g. '2h', '30m', 'half day', 'evening'"),
   confirmationCode: z.string().optional().describe("Booking/reservation code"),
-}, async ({ name, category, location, placeId, lat, lng, tripId, description, details, costNotes, durationEstimate, confirmationCode }) => {
+}, async ({ name, category, location, placeId, lat, lng, tripId, description, details, costNotes, durationEstimate, confirmationCode, setting, bookingReqs }) => {
   await getLogId();
   const ref = activitiesRef().doc();
   const data = { name, category, location, tripId, description, costNotes, durationEstimate, created: now(), updated: now() };
